@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'otp_Screen.dart';
+
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
@@ -17,6 +19,15 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _logoDesc(),
               const SizedBox(height: 48),
+              Row(
+                children: [
+                  _phoneCode(),
+                  const SizedBox(width: 10),
+                  _phoneTextField(),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _continueBtn(context),
             ],
           ),
         ),
@@ -50,6 +61,57 @@ class LoginScreen extends StatelessWidget {
   }
 
   Widget _phoneCode() {
-    return Row();
+    return Container(
+      height: 52,
+      width: 64,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2237),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Text(
+        '+91',
+        style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _phoneTextField() {
+    return Expanded(
+      child: TextField(
+        keyboardType: TextInputType.phone,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: '98765 43210',
+          filled: true,
+          fillColor: const Color(0xFF2A2237),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _continueBtn(context) {
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const OtpScreen()));
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFE63888),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: const Text(
+          'Continue',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+    );
   }
 }
