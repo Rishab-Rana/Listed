@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:listed/screen/login_screen.dart';
-import 'package:listed/screen/otp_Screen.dart';
+import 'package:listed/screen/main_shell.dart';
+
+import 'logic/events_cubit.dart';
 
 void main() {
   runApp(const ListedApp());
@@ -17,7 +20,11 @@ class ListedApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF17111F),
         useMaterial3: true,
       ),
-      home: const Scaffold(body: Center(child: LoginScreen())),
+      // home: const MainShell(),
+      home: BlocProvider(
+        create: (_) => EventsCubit()..loadEvents(),
+        child: const LoginScreen(),
+      ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:listed/screen/home_screen.dart';
 
+import 'main_shell.dart';
+
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
 
@@ -129,7 +131,7 @@ class _OtpScreenState extends State<OtpScreen> {
       height: 52,
       child: ElevatedButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const MainShell()));
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE63888),
