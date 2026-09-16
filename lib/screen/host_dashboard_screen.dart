@@ -1,35 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../core/base_state.dart';
+import '../logic/events_cubit.dart';
 import '../models/event_item.dart';
 import 'create_event_screen.dart';
 import 'guestlist_screen.dart';
 
-class HostDashboardScreen extends StatelessWidget {
+class HostDashboardScreen extends StatefulWidget {
   const HostDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final totalReserved = dummyEvents.fold(0, (sum, e) => sum + e.reserved);
-    final totalCapacity = dummyEvents.fold(0, (sum, e) => sum + e.capacity);
-    final avgFill = ((totalReserved / totalCapacity) * 100).round();
+  State<HostDashboardScreen> createState() => _HostDashboardScreenState();
+}
 
+class _HostDashboardScreenState extends State<HostDashboardScreen> {
+  late final EventsCubit _cubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit = context.read<EventsCubit>();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF17111F),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _header(),
-            _statRow(dummyEvents.length, totalReserved, avgFill),
-            Expanded(child: _eventsList(context)),
-          ],
+        child: BlocBuilder<EventsCubit, BaseState<List<EventItem>>>(
+          bloc: _cubit,
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator(color: Colors.white));
+            }
+            if (state.error != null) {
+              return Center(child: Text(state.error!, style: const TextStyle(color: Colors.white70)));
+            }
+
+            final events = state.data ?? [];
+            final totalReserved = events.fold(0, (sum, e) => sum + e.reserved);
+            final totalCapacity = events.fold(1, (sum, e) => sum + e.capacity);
+            final avgFill = ((totalReserved / totalCapacity) * 100).round();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _header(),
+                _statRow(events.length, totalReserved, avgFill),
+                Expanded(child: _eventsList(context, events)),
+              ],
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFFE63888),
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateEventScreen())).then((_) {
-            // temporary — full fix comes with Cubit
-          });
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateEventScreen()));
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -92,12 +119,12 @@ class HostDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _eventsList(BuildContext context) {
+  Widget _eventsList(BuildContext context, List<EventItem> events) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      itemCount: dummyEvents.length,
+      itemCount: events.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _hostEventCard(context, dummyEvents[index]),
+      itemBuilder: (context, index) => _hostEventCard(context, events[index]),
     );
   }
 

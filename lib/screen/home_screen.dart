@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../core/base_state.dart';
+import '../logic/events_cubit.dart';
 import '../models/event_item.dart';
 import 'event_detail_screen.dart';
 
@@ -10,11 +13,39 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final EventsCubit _cubit;
   int _selectedChip = 0;
   final List<String> _chips = ['All', 'Tonight', 'This weekend', 'Guestlist open', 'Tables'];
 
   @override
+  void initState() {
+    super.initState();
+    _cubit = context.read<EventsCubit>();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: BlocBuilder<EventsCubit, BaseState<List<EventItem>>>(
+          bloc: _cubit,
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator(color: Colors.white));
+            }
+            if (state.error != null) {
+              return Center(child: Text(state.error!, style: const TextStyle(color: Colors.white70)));
+            }
+            final events = state.data ?? [];
+
+            return _homeMainWidget(events);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _homeMainWidget(events){
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -55,14 +86,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Text('Featured tonight', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
                     ),
                     const SizedBox(height: 10),
-                    _featuredRow(context),
+                    _featuredRow(context,events),
                     const SizedBox(height: 22),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Text('This week', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
                     ),
                     const SizedBox(height: 10),
-                    _eventList(),
+                    _eventList(events),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -137,15 +168,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _featuredRow(context) {
+  Widget _featuredRow(BuildContext context, List<EventItem> events) {
     return SizedBox(
       height: 260,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: dummyEvents.length,
+        itemCount: events.length,
         itemBuilder: (context, index) {
-          final event = dummyEvents[index];
+          final event = events[index];
           return Padding(
             padding: const EdgeInsets.only(right: 14),
             child: GestureDetector(
@@ -201,14 +232,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _eventList() {
+  Widget _eventList(List<EventItem> events) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: dummyEvents.length,
+      itemCount: events.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _eventRow(dummyEvents[index]),
+      itemBuilder: (context, index) => _eventRow(events[index]),
     );
   }
 

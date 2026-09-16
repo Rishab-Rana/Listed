@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../logic/events_cubit.dart';
 import '../models/event_item.dart';
 
 class CreateEventScreen extends StatefulWidget {
@@ -154,7 +156,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         notes: _notesController.text,
         gradient: const [Color(0xFFE63888), Color(0xFF4A2166)],
       );
-      dummyEvents.insert(0, newEvent);
+      context.read<EventsCubit>().addEvent(newEvent);
       Navigator.pop(context);
     }
   }
