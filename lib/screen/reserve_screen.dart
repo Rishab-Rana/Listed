@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:listed/screen/pass_screen.dart';
 import '../models/event_item.dart';
+import '../models/reservation.dart';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../logic/reservation_cubit.dart';
+import '../logic/events_cubit.dart';
+import '../models/reservation.dart';
+
 
 class ReserveScreen extends StatefulWidget {
   final EventItem event;
@@ -12,8 +19,19 @@ class ReserveScreen extends StatefulWidget {
 
 class _ReserveScreenState extends State<ReserveScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _leadNameController = TextEditingController();
+  final _leadPhoneController = TextEditingController(text: '+91 98765 43210');
   String _reserveType = 'guestlist';
   int _partySize = 2;
+
+
+  @override
+  void dispose() {
+    _leadNameController.dispose();
+    _leadPhoneController.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -168,9 +186,9 @@ class _ReserveScreenState extends State<ReserveScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _fieldLabel('Lead guest name'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
           TextFormField(
+            controller: _leadNameController,
             style: const TextStyle(color: Colors.white),
             decoration: _fieldDecoration('Your full name'),
             validator: (value) {
@@ -178,10 +196,8 @@ class _ReserveScreenState extends State<ReserveScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 18),
-          _fieldLabel('Mobile number'),
-          const SizedBox(height: 8),
           TextFormField(
+            controller: _leadPhoneController,
             keyboardType: TextInputType.phone,
             style: const TextStyle(color: Colors.white),
             decoration: _fieldDecoration('+91 98765 43210'),
@@ -190,6 +206,9 @@ class _ReserveScreenState extends State<ReserveScreen> {
               return null;
             },
           ),
+          const SizedBox(height: 18),
+          _fieldLabel('Mobile number'),
+          const SizedBox(height: 8),
           if (_reserveType == 'table') ...[
             const SizedBox(height: 16),
             Container(
@@ -243,9 +262,26 @@ class _ReserveScreenState extends State<ReserveScreen> {
 
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
+      final reservation = Reservation(
+        event: widget.event,
+        type: _reserveType,
+        partySize: _partySize,
+        leadName: _leadNameController.text.trim(),
+        leadPhone: _leadPhoneController.text.trim(),
+        code: 'LST-${(1000 + _partySize * 137) % 9999}',
+      );
+
+      context.read<ReservationCubit>().addReservation(reservation);
+      context.read<EventsCubit>().incrementReserved(widget.event.id, _partySize);
+
+
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => PassScreen(event: widget.event, reserveType: _reserveType, partySize: _partySize)),
+        MaterialPageRoute(builder: (_) => PassScreen(
+          event: widget.event,
+          reserveType: _reserveType,
+          partySize: _partySize,
+        )),
       );
     }
   }

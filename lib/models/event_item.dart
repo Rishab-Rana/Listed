@@ -1,6 +1,7 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 
 class EventItem {
+  final String id;
   final String title;
   final String venue;
   final String area;
@@ -13,6 +14,7 @@ class EventItem {
   final List<Color> gradient;
 
   const EventItem({
+    required this.id,
     required this.title,
     required this.venue,
     required this.area,
@@ -24,10 +26,64 @@ class EventItem {
     required this.notes,
     required this.gradient,
   });
+
+  factory EventItem.fromMap(String id, Map<String, dynamic> map) {
+    final colors = (map['gradient'] as List<dynamic>? ?? [])
+        .map((c) => Color((c as num).toInt()))
+        .toList();
+
+    return EventItem(
+      id: id,
+      title: map['title'] ?? '',
+      venue: map['venue'] ?? '',
+      area: map['area'] ?? '',
+      date: map['date'] ?? '',
+      time: map['time'] ?? '',
+      tag: map['tag'] ?? '',
+      capacity: (map['capacity'] as num?)?.toInt() ?? 0,
+      reserved: (map['reserved'] as num?)?.toInt() ?? 0,
+      notes: map['notes'] ?? '',
+      // LinearGradient needs at least 2 colors, so fall back if the data is missing
+      gradient: colors.length >= 2
+          ? colors
+          : const [Color(0xFFE63888), Color(0xFF4A2166)],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'venue': venue,
+      'area': area,
+      'date': date,
+      'time': time,
+      'tag': tag,
+      'capacity': capacity,
+      'reserved': reserved,
+      'notes': notes,
+      'gradient': gradient.map((c) => c.toARGB32()).toList(),
+    };
+  }
+
+  EventItem copyWith({String? id, int? reserved}) {
+    return EventItem(
+      id: id ?? this.id,
+      title: title,
+      venue: venue,
+      area: area,
+      date: date,
+      time: time,
+      tag: tag,
+      capacity: capacity,
+      reserved: reserved ?? this.reserved,
+      notes: notes,
+      gradient: gradient,
+    );
+  }
 }
 
 final List<EventItem> dummyEvents = [
-  EventItem(title: 'MIDNIGHT HOUR', venue: 'Blackbird Rooftop', tag: 'Guestlist Open', gradient: [const Color(0xFFE63888), const Color(0xFF4A2166)],area: 'Cyber Hub, Gurugram', date: 'Fri, 12 Sep', time: '10:00 PM – 3:00 AM', capacity: 150, reserved: 112, notes: 'Smart casuals only.'),
-  EventItem(title: 'NEON TEMPLE', venue: 'Aria Social', tag: 'Tables Filling Fast', gradient: [const Color(0xFFC9A15E), const Color(0xFF5C2144)],area: 'Cyber Hub, Gurugram', date: 'Fri, 12 Sep', time: '10:00 PM – 3:00 AM', capacity: 150, reserved: 112, notes: 'Smart casuals only.'),
-  EventItem(title: 'VELVET UNDERGROUND', venue: 'The Hollow', tag: 'Guestlist Open', gradient: [const Color(0xFF7A2E4E), const Color(0xFF1C1430)],area: 'Cyber Hub, Gurugram', date: 'Fri, 12 Sep', time: '10:00 PM – 3:00 AM', capacity: 150, reserved: 112, notes: 'Smart casuals only.'),
+  EventItem(title: 'MIDNIGHT HOUR', venue: 'Blackbird Rooftop', tag: 'Guestlist Open', gradient: [const Color(0xFFE63888), const Color(0xFF4A2166)],area: 'Cyber Hub, Gurugram', date: 'Fri, 12 Sep', time: '10:00 PM – 3:00 AM', capacity: 150, reserved: 112, notes: 'Smart casuals only.', id: ''),
+  EventItem(title: 'NEON TEMPLE', venue: 'Aria Social', tag: 'Tables Filling Fast', gradient: [const Color(0xFFC9A15E), const Color(0xFF5C2144)],area: 'Cyber Hub, Gurugram', date: 'Fri, 12 Sep', time: '10:00 PM – 3:00 AM', capacity: 150, reserved: 112, notes: 'Smart casuals only.', id: ''),
+  EventItem(title: 'VELVET UNDERGROUND', venue: 'The Hollow', tag: 'Guestlist Open', gradient: [const Color(0xFF7A2E4E), const Color(0xFF1C1430)],area: 'Cyber Hub, Gurugram', date: 'Fri, 12 Sep', time: '10:00 PM – 3:00 AM', capacity: 150, reserved: 112, notes: 'Smart casuals only.', id: ''),
 ];

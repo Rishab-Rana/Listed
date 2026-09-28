@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:listed/screen/login_screen.dart';
-import 'package:listed/screen/main_shell.dart';
-
+import 'data/events_repository.dart';
 import 'logic/events_cubit.dart';
+import 'logic/reservation_cubit.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => EventsCubit()..loadEvents()),
-        // more providers go here as you add them
+        BlocProvider(create: (_) => EventsCubit(EventsRepository())..loadEvents()),
+        BlocProvider(create: (_) => ReservationCubit()),
       ],
       child: const ListedApp(),
     ),

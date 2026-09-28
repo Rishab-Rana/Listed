@@ -142,22 +142,24 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  void _handlePublish() {
-    if (_formKey.currentState!.validate()) {
-      final newEvent = EventItem(
-        title: _titleController.text.toUpperCase(),
-        venue: _venueController.text,
-        area: 'Gurugram',
-        date: _dateController.text,
-        time: _timeController.text,
-        tag: 'Just Listed',
-        capacity: int.tryParse(_capacityController.text) ?? 100,
-        reserved: 0,
-        notes: _notesController.text,
-        gradient: const [Color(0xFFE63888), Color(0xFF4A2166)],
-      );
-      context.read<EventsCubit>().addEvent(newEvent);
-      Navigator.pop(context);
-    }
+  Future<void> _handlePublish() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final newEvent = EventItem(
+      id: '',
+      title: _titleController.text.toUpperCase(),
+      venue: _venueController.text,
+      area: 'Gurugram',
+      date: _dateController.text,
+      time: _timeController.text,
+      tag: 'Just Listed',
+      capacity: int.tryParse(_capacityController.text) ?? 100,
+      reserved: 0,
+      notes: _notesController.text,
+      gradient: const [Color(0xFFE63888), Color(0xFF4A2166)],
+    );
+
+    await context.read<EventsCubit>().addEvent(newEvent);
+    if (mounted) Navigator.pop(context);
   }
 }

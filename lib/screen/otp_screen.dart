@@ -131,7 +131,14 @@ class _OtpScreenState extends State<OtpScreen> {
       height: 52,
       child: ElevatedButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const MainShell()));
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/main'),
+              builder: (_) => const MainShell(),
+            ),
+                (route) => false, // removes every route below it — Login and OTP are gone from the stack
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE63888),

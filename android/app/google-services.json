@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "10763486161",
+    "project_id": "listed-app-delhi",
+    "storage_bucket": "listed-app-delhi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10763486161:android:4303c32b51e84b67f056f0",
+        "android_client_info": {
+          "package_name": "com.example.listed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWIM9e2TE-bZZKUwkrEoeObZl_LCIdGYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
