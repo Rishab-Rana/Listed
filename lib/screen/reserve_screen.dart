@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:listed/screen/pass_screen.dart';
+import '../logic/auth_cubit.dart';
 import '../models/event_item.dart';
 import '../models/reservation.dart';
 
@@ -262,7 +263,11 @@ class _ReserveScreenState extends State<ReserveScreen> {
 
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
+      final userId = context.read<AuthCubit>().state.data!.uid;
+
       final reservation = Reservation(
+        id: '',
+        userId: userId,
         event: widget.event,
         type: _reserveType,
         partySize: _partySize,
@@ -273,7 +278,6 @@ class _ReserveScreenState extends State<ReserveScreen> {
 
       context.read<ReservationCubit>().addReservation(reservation);
       context.read<EventsCubit>().incrementReserved(widget.event.id, _partySize);
-
 
       Navigator.push(
         context,

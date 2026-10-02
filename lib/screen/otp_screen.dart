@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:listed/screen/home_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../logic/auth_cubit.dart';
+import '../logic/user_cubit.dart';
 import 'main_shell.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key});
+  final String phoneNumber;
+  const OtpScreen({super.key, required this.phoneNumber});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -12,8 +15,8 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   final List<TextEditingController> _controllers =
-  List.generate(4, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
   void dispose() {
@@ -81,7 +84,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Widget _subtitle() {
     return Text(
-      'Sent to +91 98765 43210',
+      'Sent to ${widget.phoneNumber}',
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -92,10 +95,10 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Widget _otpRow() {
     return Row(
-      children: List.generate(4, (index) {
+      children: List.generate(6, (index) {
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(right: index == 3 ? 0 : 12),
+            padding: EdgeInsets.only(right: index == 6 ? 0 : 8),
             child: TextField(
               controller: _controllers[index],
               focusNode: _focusNodes[index],
@@ -113,7 +116,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
               onChanged: (value) {
-                if (value.isNotEmpty && index < 3) {
+                if (value.isNotEmpty && index < 5) {
                   _focusNodes[index + 1].requestFocus();
                 } else if (value.isEmpty && index > 0) {
                   _focusNodes[index - 1].requestFocus();
@@ -131,14 +134,7 @@ class _OtpScreenState extends State<OtpScreen> {
       height: 52,
       child: ElevatedButton(
         onPressed: () {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              settings: const RouteSettings(name: '/main'),
-              builder: (_) => const MainShell(),
-            ),
-                (route) => false, // removes every route below it — Login and OTP are gone from the stack
-          );
+          _handleVerify();
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE63888),
@@ -169,5 +165,28 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleVerify() async {
+    final code = _controllers.map((c) => c.text).join();
+    await context.read<AuthCubit>().verifyOtp(code);
+
+    if (!mounted) return;
+
+    final authState = context.read<AuthCubit>().state;
+    if (authState.data != null) {
+      final user = authState.data!;
+      await context.read<UserCubit>().loadOrCreate(user.uid, user.phoneNumber ?? '');
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(settings: const RouteSettings(name: '/main'), builder: (_) => const MainShell()),
+            (route) => false,
+      );
+    } else if (authState.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(authState.error!)));
+    }
   }
 }

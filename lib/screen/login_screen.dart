@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../logic/auth_cubit.dart';
 import 'otp_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+final _phoneTextInput = TextEditingController();
+
+@override
+void dispose() {
+_phoneTextInput.dispose();
+super.dispose();
+}
+
+@override
+Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -81,6 +96,7 @@ class LoginScreen extends StatelessWidget {
       child: TextField(
         keyboardType: TextInputType.phone,
         style: const TextStyle(color: Colors.white),
+        controller: _phoneTextInput,
         decoration: InputDecoration(
           hintText: '98765 43210',
           filled: true,
@@ -94,12 +110,19 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _continueBtn(context) {
+  Widget _continueBtn(BuildContext context) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const OtpScreen()));
+        // onPressed: () {
+        //   Navigator.push(context, MaterialPageRoute(builder: (_) => const OtpScreen()));
+        // },
+        onPressed: () async {
+          final phone = '+91${_phoneTextInput.text.trim()}'; // adjust based on your actual field
+          await context.read<AuthCubit>().sendOtp(phone);
+          if (context.mounted) {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OtpScreen(phoneNumber: phone)));
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE63888),

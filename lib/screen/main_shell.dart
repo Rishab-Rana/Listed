@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../core/base_state.dart';
+import '../logic/user_cubit.dart';
+import '../models/app_user.dart';
 import 'home_screen.dart';
 import 'my_passes_screen.dart';
 import 'host_dashboard_screen.dart';
@@ -15,46 +19,46 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    MyPassesScreen(),
-    HostDashboardScreen(),
-    ProfileScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF17111F),
-      body: Column(
-        children: [
-          Expanded(
-            child: IndexedStack(index: _currentIndex, children: _screens),
+    return BlocBuilder<UserCubit, BaseState<AppUser>>(
+      builder: (context, userState) {
+        final isHost = userState.data?.isHost ?? false;
+
+        final screens = [
+          const HomeScreen(),
+          const MyPassesScreen(),
+          if (isHost) const HostDashboardScreen(),
+          const ProfileScreen(),
+        ];
+
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: IndexedStack(
+            index: _currentIndex.clamp(0, screens.length - 1),
+            children: screens,
           ),
-          _bottomNav(),
-        ],
-      ),
+          bottomNavigationBar: _bottomNav(isHost),
+        );
+      },
     );
   }
 
-  Widget _bottomNav() {
+  Widget _bottomNav(bool isHost) {
     return Container(
-      width: double.infinity,
-      height: 80,
       decoration: BoxDecoration(
         color: const Color(0xFF17111F),
         border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            _navItem(0, Icons.home, 'Home'),
-            _navItem(1, Icons.confirmation_number, 'My Passes'),
-            _navItem(2, Icons.mic, 'Host'),
-            _navItem(3, Icons.person, 'Profile'),
-          ],
-        ),
+      padding: const EdgeInsets.only(top: 10, bottom: 24),
+      child: Row(
+        children: [
+          _navItem(0, Icons.home, 'Home'),
+          _navItem(1, Icons.confirmation_number, 'My Passes'),
+          if (isHost) _navItem(2, Icons.mic, 'Host'),
+          _navItem(isHost ? 3 : 2, Icons.person, 'Profile'),
+        ],
       ),
     );
   }
@@ -70,7 +74,7 @@ class _MainShellState extends State<MainShell> {
           });
         },
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,

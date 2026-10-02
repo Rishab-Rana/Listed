@@ -46,63 +46,59 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _homeMainWidget(events){
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '📍 Gurugram, Delhi NCR',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Tonight's Lineup",
-                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.person, color: Colors.white),
-                          style: IconButton.styleFrom(backgroundColor: const Color(0xFF2A2237), shape: const CircleBorder()),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _searchBar(),
-                    const SizedBox(height: 14),
-                    _chipRow(),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('Featured tonight', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
-                    ),
-                    const SizedBox(height: 10),
-                    _featuredRow(context,events),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('This week', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
-                    ),
-                    const SizedBox(height: 10),
-                    _eventList(events),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+    return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '📍 Gurugram, Delhi NCR',
+                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Tonight's Lineup",
+                        style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.person, color: Colors.white),
+                        style: IconButton.styleFrom(backgroundColor: const Color(0xFF2A2237), shape: const CircleBorder()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _searchBar(),
+                  const SizedBox(height: 14),
+                  _chipRow(),
+                  const SizedBox(height: 22),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text('Featured tonight', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ),
+                  const SizedBox(height: 10),
+                  _featuredRow(context,events),
+                  const SizedBox(height: 22),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text('This week', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ),
+                  const SizedBox(height: 10),
+                  _eventList(events),
+                  const SizedBox(height: 24),
+                ],
               ),
-              // featured row + event list go here — next chunk
-            ],
-          ),
+            ),
+            // featured row + event list go here — next chunk
+          ],
         ),
-      ),
     );
   }
 
