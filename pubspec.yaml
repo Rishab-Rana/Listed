@@ -19,6 +19,12 @@ dependencies:
   flutter_native_splash: ^2.4.1
   firebase_core: ^4.15.0
   cloud_firestore: ^6.10.0
+  firebase_auth: ^6.7.0
+  image_picker: ^1.2.3
+  firebase_storage: ^13.6.0
+  intl: ^0.20.3
+  geolocator: ^14.1.1
+  cached_network_image: ^4.0.4
 
 dev_dependencies:
   flutter_test:
