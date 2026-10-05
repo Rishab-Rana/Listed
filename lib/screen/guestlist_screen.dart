@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../core/base_state.dart';
+import '../logic/guest_list_cubit.dart';
 import '../models/event_item.dart';
-import '../models/guest_reservation.dart';
+import '../models/reservation.dart';
 
 class GuestListScreen extends StatefulWidget {
   final EventItem event;
@@ -11,19 +14,17 @@ class GuestListScreen extends StatefulWidget {
 }
 
 class _GuestListScreenState extends State<GuestListScreen> {
-  final List<GuestReservation> _guests = [
-    GuestReservation(name: 'Priya Sharma', phone: '+91 98110 22331', size: 2, type: 'Guestlist'),
-    GuestReservation(name: 'Karan Vij', phone: '+91 99586 44120', size: 4, type: 'Table', checkedIn: true),
-    GuestReservation(name: 'Neha & friends', phone: '+91 97170 88213', size: 3, type: 'Guestlist'),
-    GuestReservation(name: 'Rohan Kapoor', phone: '+91 98730 11209', size: 2, type: 'Guestlist', checkedIn: true),
-    GuestReservation(name: 'Simran Kaur', phone: '+91 96543 90871', size: 5, type: 'Table'),
-  ];
+  late final GuestListCubit _cubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit = context.read<GuestListCubit>();
+    _cubit.loadForEvent(widget.event.id);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final checkedInCount = _guests.where((g) => g.checkedIn).length;
-    final totalGuests = _guests.fold(0, (sum, g) => sum + g.size);
-
     return Scaffold(
       backgroundColor: const Color(0xFF17111F),
       appBar: AppBar(
@@ -36,27 +37,43 @@ class _GuestListScreenState extends State<GuestListScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _summaryRow(checkedInCount, totalGuests),
-            Expanded(child: _guestListView()),
-          ],
+        child: BlocBuilder<GuestListCubit, BaseState<List<Reservation>>>(
+          bloc: _cubit,
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator(color: Colors.white));
+            }
+            if (state.error != null) {
+              return Center(child: Text(state.error!, style: const TextStyle(color: Colors.white70)));
+            }
+
+            final guests = state.data ?? [];
+            final checkedInCount = guests.where((g) => g.checkedIn).length;
+            final totalGuests = guests.fold(0, (sum, g) => sum + g.partySize);
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _summaryRow(guests.length, totalGuests, checkedInCount),
+                Expanded(child: _guestListView(guests)),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _summaryRow(int checkedInCount, int totalGuests) {
+  Widget _summaryRow(int reservationCount, int totalGuests, int checkedInCount) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Expanded(child: _statCard('${_guests.length}', 'Reservations')),
+          Expanded(child: _statCard('$reservationCount', 'Reservations')),
           const SizedBox(width: 10),
           Expanded(child: _statCard('$totalGuests', 'Total guests')),
           const SizedBox(width: 10),
-          Expanded(child: _statCard('$checkedInCount/${_guests.length}', 'Checked in')),
+          Expanded(child: _statCard('$checkedInCount/$reservationCount', 'Checked in')),
         ],
       ),
     );
@@ -80,21 +97,21 @@ class _GuestListScreenState extends State<GuestListScreen> {
     );
   }
 
-  Widget _guestListView() {
-    if (_guests.isEmpty) {
+  Widget _guestListView(List<Reservation> guests) {
+    if (guests.isEmpty) {
       return Center(
         child: Text('No reservations yet', style: TextStyle(color: Colors.white.withOpacity(0.5))),
       );
     }
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: _guests.length,
+      itemCount: guests.length,
       separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.06), height: 1),
-      itemBuilder: (context, index) => _guestRow(_guests[index]),
+      itemBuilder: (context, index) => _guestRow(guests[index]),
     );
   }
 
-  Widget _guestRow(GuestReservation guest) {
+  Widget _guestRow(Reservation r) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -104,48 +121,44 @@ class _GuestListScreenState extends State<GuestListScreen> {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(color: const Color(0xFF2A2237), shape: BoxShape.circle),
-            child: Text(_initials(guest.name), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Colors.white)),
+            child: Text(_initials(r.leadName), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Colors.white)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(guest.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
-                Text('${guest.type} · ${guest.size} guests · ${guest.phone}', style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5))),
+                Text(r.leadName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                Text('${r.type} · ${r.partySize} guests · ${r.leadPhone}', style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5))),
               ],
             ),
           ),
-          _checkInButton(guest),
+          _checkInButton(r),
         ],
       ),
     );
   }
 
-  Widget _checkInButton(GuestReservation guest) {
+  Widget _checkInButton(Reservation r) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          guest.checkedIn = !guest.checkedIn;
-        });
-      },
+      onTap: () => _cubit.toggleCheckIn(r.id, r.checkedIn),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: guest.checkedIn ? const Color(0xFF6BBF8C).withOpacity(0.15) : Colors.transparent,
-          border: Border.all(color: guest.checkedIn ? const Color(0xFF6BBF8C) : Colors.white.withOpacity(0.15), width: 1.5),
+          color: r.checkedIn ? const Color(0xFF6BBF8C).withOpacity(0.15) : Colors.transparent,
+          border: Border.all(color: r.checkedIn ? const Color(0xFF6BBF8C) : Colors.white.withOpacity(0.15), width: 1.5),
           borderRadius: BorderRadius.circular(100),
         ),
         child: Text(
-          guest.checkedIn ? '✓ In' : 'Check in',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: guest.checkedIn ? const Color(0xFF6BBF8C) : Colors.white.withOpacity(0.6)),
+          r.checkedIn ? '✓ In' : 'Check in',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: r.checkedIn ? const Color(0xFF6BBF8C) : Colors.white.withOpacity(0.6)),
         ),
       ),
     );
   }
 
   String _initials(String name) {
-    final parts = name.replaceAll('&', '').trim().split(' ').where((p) => p.isNotEmpty).toList();
+    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return '?';
     return parts.take(2).map((p) => p[0]).join().toUpperCase();
   }

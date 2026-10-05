@@ -1,9 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_item.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class EventsRepository {
   final CollectionReference<Map<String, dynamic>> _col =
   FirebaseFirestore.instance.collection('events');
+
+  Future<String> uploadCoverImage(String eventId, File imageFile) async {
+    final ref = FirebaseStorage.instance.ref().child('event_covers/$eventId.jpg');
+    await ref.putFile(imageFile);
+    return await ref.getDownloadURL();
+  }
 
   Future<List<EventItem>> fetchEvents() async {
     final snap = await _col.orderBy('createdAt', descending: true).get();
@@ -22,12 +30,11 @@ class EventsRepository {
     return _col.doc(eventId).update({'reserved': FieldValue.increment(by)});
   }
 
-  // One-time helper to put the dummy events into Firestore
-  Future<void> seedIfEmpty() async {
-    final existing = await _col.limit(1).get();
-    if (existing.docs.isNotEmpty) return;
-    for (final e in dummyEvents) {
-      await _col.add({...e.toMap(), 'createdAt': FieldValue.serverTimestamp()});
-    }
+  Future<void> setCoverImage(String eventId, String url) {
+    return _col.doc(eventId).update({'coverImageUrl': url});
+  }
+
+  Future<void> deleteEvent(String eventId) {
+    return _col.doc(eventId).delete();
   }
 }

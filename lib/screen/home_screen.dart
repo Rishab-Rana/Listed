@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/base_state.dart';
+import '../data/location_service.dart';
 import '../logic/events_cubit.dart';
 import '../models/event_item.dart';
+import '../widgets/event_visual.dart';
 import 'event_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,11 +18,19 @@ class _HomeScreenState extends State<HomeScreen> {
   late final EventsCubit _cubit;
   int _selectedChip = 0;
   final List<String> _chips = ['All', 'Tonight', 'This weekend', 'Guestlist open', 'Tables'];
+  String _locationLabel = 'No Location';
 
   @override
   void initState() {
     super.initState();
     _cubit = context.read<EventsCubit>();
+    _loadLocation();
+  }
+
+  Future<void> _loadLocation() async {
+    final position = await LocationService().getCurrentLocation();
+    if (position == null || !mounted) return;
+    setState(() => _locationLabel = 'Current location');
   }
 
   @override
@@ -38,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             final events = state.data ?? [];
 
-            return _homeMainWidget(events);
+            return _homeMainWidget(_filteredEvents(events));
           },
         ),
       ),
@@ -56,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '📍 Gurugram, Delhi NCR',
+                    _locationLabel,
                     style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 14),
@@ -186,18 +196,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _flyerCard(EventItem event) {
-    return Container(
+    return SizedBox(
       width: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: event.gradient,
-        ),
-      ),
+      height: 260,
       child: Stack(
         children: [
+          Positioned.fill(
+            child: EventVisual(event: event, borderRadius: BorderRadius.circular(18)),
+          ),
           Positioned(
             top: 14,
             left: 14,
@@ -241,9 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _eventRow(EventItem event) {
     return GestureDetector(
-      onTap: () {
-        // we'll navigate to event detail later
-      },
+      onTap: () => _openDetail(context, event),
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -253,12 +257,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 74,
               height: 74,
-              decoration: BoxDecoration(
+              child: EventVisual(
+                event: event,
                 borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(colors: event.gradient),
               ),
             ),
             const SizedBox(width: 12),
@@ -292,5 +296,39 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
     );
+  }
+
+  List<EventItem> _filteredEvents(List<EventItem> events) {
+    final now = DateTime.now();
+
+    final upcoming = events.where((e) => !e.isPast).toList()
+      ..sort((a, b) => a.eventDateTime.compareTo(b.eventDateTime));
+
+    switch (_selectedChip) {
+      case 1: // Tonight
+        return upcoming.where((e) =>
+        e.eventDateTime.year == now.year &&
+            e.eventDateTime.month == now.month &&
+            e.eventDateTime.day == now.day
+        ).toList();
+
+      case 2: // This weekend
+        final monday = DateTime(now.year, now.month, now.day)
+            .subtract(Duration(days: now.weekday - DateTime.monday));
+        final saturday = monday.add(const Duration(days: 5));
+        final nextMonday = monday.add(const Duration(days: 7));
+        return upcoming.where((e) =>
+        !e.eventDateTime.isBefore(saturday) && e.eventDateTime.isBefore(nextMonday)
+        ).toList();
+
+      case 3: // Guestlist open
+        return upcoming.where((e) => e.guestlistEnabled).toList();
+
+      case 4: // Tables
+        return upcoming.where((e) => e.tableEnabled).toList();
+
+      default: // All
+        return upcoming;
+    }
   }
 }

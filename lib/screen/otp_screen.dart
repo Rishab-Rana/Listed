@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../logic/auth_cubit.dart';
 import '../logic/user_cubit.dart';
+import 'complete_profile_screen.dart';
 import 'main_shell.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -180,9 +181,15 @@ class _OtpScreenState extends State<OtpScreen> {
 
       if (!mounted) return;
 
+      final appUser = context.read<UserCubit>().state.data;
+      final needsProfile = appUser == null || !appUser.isProfileComplete;
+
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(settings: const RouteSettings(name: '/main'), builder: (_) => const MainShell()),
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/main'),
+          builder: (_) => needsProfile ? const CompleteProfileScreen() : const MainShell(),
+        ),
             (route) => false,
       );
     } else if (authState.error != null) {

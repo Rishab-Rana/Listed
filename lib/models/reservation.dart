@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'event_item.dart';
+import 'dart:ui';
 
 class Reservation {
   final String id;
@@ -10,6 +12,7 @@ class Reservation {
   final String leadName;
   final String leadPhone;
   final String code;
+  final bool checkedIn;
 
   const Reservation({
     required this.id,
@@ -20,6 +23,7 @@ class Reservation {
     required this.leadName,
     required this.leadPhone,
     required this.code,
+    this.checkedIn = false,
   });
 
   factory Reservation.fromMap(String id, Map<String, dynamic> map) {
@@ -35,21 +39,22 @@ class Reservation {
         title: map['eventTitle'] ?? '',
         venue: map['eventVenue'] ?? '',
         area: map['eventArea'] ?? '',
-        date: map['eventDate'] ?? '',
-        time: map['eventTime'] ?? '',
         tag: '',
         capacity: 0,
         reserved: 0,
         notes: '',
         gradient: colors.length >= 2
             ? colors
-            : const [Color(0xFFE63888), Color(0xFF4A2166)],
+            : [Color(0xFFE63888), Color(0xFF4A2166)], eventDateTime: map['eventDateTime'] is Timestamp
+          ? (map['eventDateTime'] as Timestamp).toDate()
+          : DateTime.now(),
       ),
       type: map['type'] ?? 'guestlist',
       partySize: (map['partySize'] as num?)?.toInt() ?? 1,
       leadName: map['leadName'] ?? '',
       leadPhone: map['leadPhone'] ?? '',
       code: map['code'] ?? '',
+      checkedIn: map['checkedIn'] ?? false,
     );
   }
 
@@ -62,12 +67,13 @@ class Reservation {
       'eventArea': event.area,
       'eventDate': event.date,
       'eventTime': event.time,
-      'eventGradient': event.gradient.map((c) => c.toARGB32()).toList(),
+      'eventGradient': event.gradient.map((c) => c.value).toList(),
       'type': type,
       'partySize': partySize,
       'leadName': leadName,
       'leadPhone': leadPhone,
       'code': code,
+      'checkedIn': checkedIn,
     };
   }
 }

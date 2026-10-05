@@ -131,9 +131,7 @@ class _HostDashboardScreenState extends State<HostDashboardScreen> {
   Widget _hostEventCard(BuildContext context, EventItem event) {
     final fillRatio = (event.reserved / event.capacity).clamp(0.0, 1.0);
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => GuestListScreen(event: event)));
-      },
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GuestListScreen(event: event))),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -148,29 +146,26 @@ class _HostDashboardScreenState extends State<HostDashboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(event.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
-                    Text('${event.venue} · ${event.date}', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5))),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE63888).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(100),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(event.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
+                      Text('${event.venue} · ${event.date}', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5))),
+                    ],
                   ),
-                  child: Text(event.tag, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFE63888))),
+                ),
+                IconButton(
+                  onPressed: () => _confirmDelete(context, event),
+                  icon: Icon(Icons.delete_outline, color: Colors.white.withOpacity(0.4), size: 20),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
-                value: fillRatio,
-                minHeight: 6,
+                value: fillRatio, minHeight: 6,
                 backgroundColor: const Color(0xFF2A2237),
                 valueColor: const AlwaysStoppedAnimation(Color(0xFFC9A15E)),
               ),
@@ -182,4 +177,29 @@ class _HostDashboardScreenState extends State<HostDashboardScreen> {
       ),
     );
   }
+
+  void _confirmDelete(BuildContext context, EventItem event) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF201A2B),
+        title: const Text('Delete this night?', style: TextStyle(color: Colors.white)),
+        content: Text('This removes "${event.title}" permanently.', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<EventsCubit>().deleteEvent(event.id);
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Delete', style: TextStyle(color: Color(0xFFE63888))),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

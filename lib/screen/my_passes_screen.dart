@@ -1,8 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:listed/screen/pass_screen.dart';
 import '../core/base_state.dart';
-import '../logic/auth_cubit.dart';
 import '../logic/reservation_cubit.dart';
 import '../models/reservation.dart';
 
@@ -20,8 +20,10 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
   void initState() {
     super.initState();
     _cubit = context.read<ReservationCubit>();
-    final userId = context.read<AuthCubit>().state.data!.uid;
-    _cubit.loadForUser(userId);
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      _cubit.loadForUser(userId);
+    }
   }
 
   @override
@@ -109,7 +111,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
             ),
           ],
         ),
-      )
+      ),
     );
   }
 

@@ -29,4 +29,13 @@ class ReservationsRepository {
       code: reservation.code,
     );
   }
+
+  Future<List<Reservation>> fetchForEvent(String eventId) async {
+    final snap = await _col.where('eventId', isEqualTo: eventId).get();
+    return snap.docs.map((d) => Reservation.fromMap(d.id, d.data())).toList();
+  }
+
+  Future<void> setCheckedIn(String reservationId, bool value) {
+    return _col.doc(reservationId).update({'checkedIn': value});
+  }
 }

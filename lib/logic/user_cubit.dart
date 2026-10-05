@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/base_state.dart';
 import '../data/user_repository.dart';
@@ -16,5 +18,29 @@ class UserCubit extends Cubit<BaseState<AppUser>> {
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: e.toString()));
     }
+  }
+
+  Future<void> completeProfile({
+    required String name,
+    required int age,
+    required String gender,
+    String? photoUrl,
+  }) async {
+    final current = state.data;
+    if (current == null) return;
+
+    try {
+      await _repo.completeProfile(current.uid, name: name, age: age, gender: gender, photoUrl: photoUrl);
+      emit(state.copyWith(data: current.copyWith(
+        name: name, age: age, gender: gender, photoUrl: photoUrl, isProfileComplete: true,
+      )));
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<String> uploadProfilePhoto(File imageFile) async {
+    final uid = state.data!.uid;
+    return _repo.uploadProfilePhoto(uid, imageFile);
   }
 }

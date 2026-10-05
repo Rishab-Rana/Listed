@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/base_state.dart';
 import '../data/events_repository.dart';
@@ -27,12 +29,35 @@ class EventsCubit extends Cubit<BaseState<List<EventItem>>> {
     }
   }
 
+  Future<void> attachCoverImage(String eventId, File imageFile) async {
+    try {
+      final url = await _repo.uploadCoverImage(eventId, imageFile);
+      await _repo.setCoverImage(eventId, url);
+      final updated = (state.data ?? []).map((e) {
+        return e.id == eventId ? e.copyWith(coverImageUrl: url) : e;
+      }).toList();
+      emit(state.copyWith(data: updated));
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
   Future<void> incrementReserved(String eventId, int by) async {
     try {
       await _repo.incrementReserved(eventId, by);
       final updated = (state.data ?? [])
           .map((e) => e.id == eventId ? e.copyWith(reserved: e.reserved + by) : e)
           .toList();
+      emit(state.copyWith(data: updated));
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    try {
+      await _repo.deleteEvent(eventId);
+      final updated = (state.data ?? []).where((e) => e.id != eventId).toList();
       emit(state.copyWith(data: updated));
     } catch (e) {
       emit(state.copyWith(error: e.toString()));

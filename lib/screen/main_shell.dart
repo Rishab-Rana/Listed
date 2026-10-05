@@ -19,6 +19,9 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
+  void _goToTab(int index) {
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +33,7 @@ class _MainShellState extends State<MainShell> {
           const HomeScreen(),
           const MyPassesScreen(),
           if (isHost) const HostDashboardScreen(),
-          const ProfileScreen(),
+          ProfileScreen(onNavigate: _goToTab),
         ];
 
         return Scaffold(
@@ -68,19 +71,11 @@ class _MainShellState extends State<MainShell> {
 
     return Expanded(
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: () => _goToTab(index),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 22,
-              color: isSelected ? const Color(0xFFE63888) : Colors.white38,
-            ),
+            Icon(icon, size: 22, color: isSelected ? const Color(0xFFE63888) : Colors.white38),
             const SizedBox(height: 4),
             Text(
               label,

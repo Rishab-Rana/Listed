@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:listed/screen/reserve_screen.dart';
 import '../models/event_item.dart';
+import '../widgets/event_visual.dart';
 
 class EventDetailScreen extends StatelessWidget {
   final EventItem event;
@@ -36,15 +37,23 @@ class EventDetailScreen extends StatelessWidget {
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: event.gradient,
+        background: Stack(
+        fit: StackFit.expand,
+        children: [
+          EventVisual(event: event, borderRadius: BorderRadius.zero),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.75),
+                ],
+              ),
             ),
           ),
-          child: Align(
+          Align(
             alignment: Alignment.bottomLeft,
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -59,7 +68,8 @@ class EventDetailScreen extends StatelessWidget {
               ),
             ),
           ),
-        ),
+        ],
+      ),
       ),
     );
   }
