@@ -22,10 +22,27 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-10763486161-ios-5ccc7122022c27c6f056f0</string>
+			</array>
+		</dict>
+	</array>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Listed uses your location to show nearby venues and events.</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Listed needs camera access so you can take a cover photo for your event.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Listed needs access to your photos so you can add a cover image to your event.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

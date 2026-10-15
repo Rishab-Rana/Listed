@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/base_state.dart';
+import '../core/event_filters.dart';
 import '../data/location_service.dart';
 import '../logic/events_cubit.dart';
 import '../models/event_item.dart';
@@ -14,17 +17,49 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final EventsCubit _cubit;
   int _selectedChip = 0;
   final List<String> _chips = ['All', 'Tonight', 'This weekend', 'Guestlist open', 'Tables'];
   String _locationLabel = 'No Location';
+  Timer? _dateTimer;
+  DateTime _visibleDay = DateUtils.dateOnly(DateTime.now());
 
   @override
   void initState() {
     super.initState();
     _cubit = context.read<EventsCubit>();
     _loadLocation();
+    WidgetsBinding.instance.addObserver(this);
+    _dateTimer = Timer.periodic(const Duration(minutes: 1), (_) => _refreshDate());
+    // The first global load may have run before authentication completed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _cubit.loadEvents();
+    });
+  }
+
+  void _refreshDate() {
+    if (!mounted) return;
+    final today = DateUtils.dateOnly(DateTime.now());
+    setState(() {
+      if (today != _visibleDay) _selectedChip = 0;
+      _visibleDay = today;
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshDate();
+      _cubit.loadEvents();
+    }
+  }
+
+  @override
+  void dispose() {
+    _dateTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadLocation() async {
@@ -55,8 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _homeMainWidget(events){
-    return SingleChildScrollView(
+  Widget _homeMainWidget(List<EventItem> events) {
+    return RefreshIndicator(
+      color: const Color(0xFFE63888),
+      onRefresh: _cubit.loadEvents,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -91,24 +130,55 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 22),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text('Featured tonight', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+                    child: Text(_selectedChip == 1 ? 'Featured tonight' : 'Featured nights', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
                   ),
                   const SizedBox(height: 10),
-                  _featuredRow(context,events),
+                  if (events.isNotEmpty) _featuredRow(context, events),
                   const SizedBox(height: 22),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text('This week', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+                    child: Text('Upcoming nights', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
                   ),
                   const SizedBox(height: 10),
-                  _eventList(events),
+                  events.isEmpty ? _emptyEvents() : _eventList(events),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
-            // featured row + event list go here — next chunk
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _emptyEvents() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.event_busy, color: Colors.white38, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            _selectedChip == 0 ? 'No upcoming events yet' : 'No events for this filter',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _selectedChip == 0
+                ? 'New nights will appear here when hosts publish them.'
+                : 'Try All to see other upcoming nights.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white54, height: 1.5),
+          ),
+          if (_selectedChip != 0)
+            TextButton(
+              onPressed: () => setState(() => _selectedChip = 0),
+              child: const Text('Show all events', style: TextStyle(color: Color(0xFFE63888))),
+            ),
+        ],
+      ),
     );
   }
 
@@ -299,36 +369,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<EventItem> _filteredEvents(List<EventItem> events) {
-    final now = DateTime.now();
-
-    final upcoming = events.where((e) => !e.isPast).toList()
-      ..sort((a, b) => a.eventDateTime.compareTo(b.eventDateTime));
-
-    switch (_selectedChip) {
-      case 1: // Tonight
-        return upcoming.where((e) =>
-        e.eventDateTime.year == now.year &&
-            e.eventDateTime.month == now.month &&
-            e.eventDateTime.day == now.day
-        ).toList();
-
-      case 2: // This weekend
-        final monday = DateTime(now.year, now.month, now.day)
-            .subtract(Duration(days: now.weekday - DateTime.monday));
-        final saturday = monday.add(const Duration(days: 5));
-        final nextMonday = monday.add(const Duration(days: 7));
-        return upcoming.where((e) =>
-        !e.eventDateTime.isBefore(saturday) && e.eventDateTime.isBefore(nextMonday)
-        ).toList();
-
-      case 3: // Guestlist open
-        return upcoming.where((e) => e.guestlistEnabled).toList();
-
-      case 4: // Tables
-        return upcoming.where((e) => e.tableEnabled).toList();
-
-      default: // All
-        return upcoming;
-    }
+    return filterUpcomingEvents(
+      events,
+      selectedChip: _selectedChip,
+      now: DateTime.now(),
+    );
   }
 }

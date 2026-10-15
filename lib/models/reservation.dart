@@ -58,6 +58,20 @@ class Reservation {
     );
   }
 
+  Reservation withEvent(EventItem currentEvent) {
+    return Reservation(
+      id: id,
+      userId: userId,
+      event: currentEvent,
+      type: type,
+      partySize: partySize,
+      leadName: leadName,
+      leadPhone: leadPhone,
+      code: code,
+      checkedIn: checkedIn,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -65,6 +79,7 @@ class Reservation {
       'eventTitle': event.title,
       'eventVenue': event.venue,
       'eventArea': event.area,
+      'eventDateTime': Timestamp.fromDate(event.eventDateTime),
       'eventDate': event.date,
       'eventTime': event.time,
       'eventGradient': event.gradient.map((c) => c.value).toList(),

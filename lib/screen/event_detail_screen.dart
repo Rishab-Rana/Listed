@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:listed/screen/reserve_screen.dart';
 import '../models/event_item.dart';
 import '../widgets/event_visual.dart';
+import '../widgets/save_venue_button.dart';
+import '../models/saved_venue.dart';
 
 class EventDetailScreen extends StatelessWidget {
   final EventItem event;
@@ -36,6 +38,10 @@ class EventDetailScreen extends StatelessWidget {
           style: IconButton.styleFrom(backgroundColor: Colors.black.withOpacity(0.4), shape: const CircleBorder()),
         ),
       ),
+      actions: [
+        SaveVenueButton(venue: SavedVenue.fromEvent(event)),
+        const SizedBox(width: 8),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
         fit: StackFit.expand,

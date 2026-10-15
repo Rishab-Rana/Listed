@@ -18,7 +18,9 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkAuth();
+    });
   }
 
   Future<void> _checkAuth() async {

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:listed/screen/auth_gate.dart';
-import 'package:listed/screen/login_screen.dart';
+import 'data/saved_venues_repository.dart';
+import 'logic/saved_venues_cubit.dart';
 import 'data/events_repository.dart';
 import 'data/reservations_repository.dart';
 import 'data/user_repository.dart';
@@ -25,6 +26,7 @@ void main() async {
         BlocProvider(create: (_) => AuthCubit()),
         BlocProvider(create: (_) => UserCubit(UserRepository())),
         BlocProvider(create: (_) => GuestListCubit(ReservationsRepository())),
+        BlocProvider(create: (_) => SavedVenuesCubit(SavedVenuesRepository())),
       ],
       child: const ListedApp(),
     ),

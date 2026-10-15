@@ -40,6 +40,11 @@ class UserRepository {
   Future<String> uploadProfilePhoto(String uid, File imageFile) async {
     final ref = FirebaseStorage.instance.ref().child('user_profiles/$uid.jpg');
     await ref.putFile(imageFile);
-    return await ref.getDownloadURL();
+    final url = Uri.parse(await ref.getDownloadURL());
+    // A fresh cache key makes replacement photos appear immediately.
+    return url.replace(queryParameters: {
+      ...url.queryParameters,
+      'v': DateTime.now().microsecondsSinceEpoch.toString(),
+    }).toString();
   }
 }

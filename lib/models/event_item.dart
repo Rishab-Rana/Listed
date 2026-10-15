@@ -16,6 +16,7 @@ class EventItem {
   final String? coverImageUrl;
   final bool guestlistEnabled;
   final bool tableEnabled;
+  final bool isDeleting;
 
   const EventItem({
     required this.id,
@@ -31,6 +32,7 @@ class EventItem {
     this.coverImageUrl,
     this.guestlistEnabled = true,
     this.tableEnabled = true,
+    this.isDeleting = false,
   });
 
   String get date => DateFormat('E, d MMM').format(eventDateTime);
@@ -59,6 +61,7 @@ class EventItem {
       coverImageUrl: map['coverImageUrl'],
       guestlistEnabled: map['guestlistEnabled'] ?? true,
       tableEnabled: map['tableEnabled'] ?? true,
+      isDeleting: map['deleting'] == true,
     );
   }
 
@@ -76,6 +79,7 @@ class EventItem {
       'coverImageUrl': coverImageUrl,
       'guestlistEnabled': guestlistEnabled,
       'tableEnabled': tableEnabled,
+      'deleting': isDeleting,
     };
   }
 
@@ -94,6 +98,7 @@ class EventItem {
       coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       guestlistEnabled: guestlistEnabled,
       tableEnabled: tableEnabled,
+      isDeleting: isDeleting,
     );
   }
 }

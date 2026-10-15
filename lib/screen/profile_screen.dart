@@ -7,11 +7,21 @@ import '../core/base_state.dart';
 import '../logic/user_cubit.dart';
 import '../models/app_user.dart';
 import 'login_screen.dart';
+import 'complete_profile_screen.dart';
+import 'saved_venues_screen.dart';
+import 'help_support_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final ValueChanged<int> onNavigate;
 
   const ProfileScreen({super.key, required this.onNavigate});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isSigningOut = false;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +82,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _avatar(AppUser? user) {
     const size = 60.0;
 
-    if (user?.photoUrl != null) {
+    if (user?.photoUrl?.isNotEmpty ?? false) {
       return ClipOval(
         child: CachedNetworkImage(
           imageUrl: user!.photoUrl!,
@@ -126,7 +136,7 @@ class ProfileScreen extends StatelessWidget {
           SizedBox(
             height: 42,
             child: ElevatedButton(
-              onPressed: () => onNavigate(2), // Host tab — always index 2 when present
+              onPressed: () => widget.onNavigate(2), // Host tab — always index 2 when present
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC9A15E),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -144,11 +154,15 @@ class ProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          _menuItem('🎫', 'My passes', onTap: () => onNavigate(1)),
-          _menuItem('📍', 'Saved venues'),
+          _menuItem('🎫', 'My passes', onTap: () => widget.onNavigate(1)),
+          _menuItem('📍', 'Saved venues', onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedVenuesScreen()));
+          }),
           _menuItem('🔔', 'Notifications'),
-          _menuItem('⚙️', 'Settings'),
-          _menuItem('💬', 'Help & support'),
+          _menuItem('⚙️', 'Settings', onTap: () => _openSettings(context)),
+          _menuItem('💬', 'Help & support', onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+          }),
         ],
       ),
     );
@@ -178,25 +192,75 @@ class ProfileScreen extends StatelessWidget {
       child: SizedBox(
         height: 48,
         child: OutlinedButton(
-          onPressed: () => _handleSignOut(context),
+          onPressed: _isSigningOut ? null : () => _handleSignOut(context),
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.white.withOpacity(0.15)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text('Sign out', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+          child: Text(_isSigningOut ? 'Signing out…' : 'Sign out', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSettings(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF201A2B),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Settings', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.edit_outlined, color: Color(0xFFE63888)),
+                title: const Text('Edit profile', style: TextStyle(color: Colors.white)),
+                subtitle: const Text('Name, age, gender and photo', style: TextStyle(color: Colors.white60)),
+                trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  final saved = await Navigator.push<bool>(context,
+                    MaterialPageRoute(builder: (_) => const CompleteProfileScreen(isEditing: true)),
+                  );
+                  if (!context.mounted || saved != true) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Profile updated')),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Future<void> _handleSignOut(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    if (!context.mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(settings: const RouteSettings(name: '/login'), builder: (_) => const LoginScreen()),
-          (route) => false,
-    );
+    if (_isSigningOut) return;
+    setState(() => _isSigningOut = true);
+    final userCubit = context.read<UserCubit>();
+    try {
+      await FirebaseAuth.instance.signOut();
+      userCubit.clear();
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(settings: const RouteSettings(name: '/login'), builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not sign out. Please try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSigningOut = false);
+    }
   }
 }

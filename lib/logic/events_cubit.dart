@@ -54,13 +54,15 @@ class EventsCubit extends Cubit<BaseState<List<EventItem>>> {
     }
   }
 
-  Future<void> deleteEvent(String eventId) async {
+  Future<bool> deleteEvent(String eventId) async {
     try {
       await _repo.deleteEvent(eventId);
       final updated = (state.data ?? []).where((e) => e.id != eventId).toList();
       emit(state.copyWith(data: updated));
+      return true;
     } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+      // Keep the dashboard usable, so the host can retry this event.
+      return false;
     }
   }
 }

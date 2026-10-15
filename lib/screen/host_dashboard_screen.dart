@@ -15,6 +15,7 @@ class HostDashboardScreen extends StatefulWidget {
 
 class _HostDashboardScreenState extends State<HostDashboardScreen> {
   late final EventsCubit _cubit;
+  final Set<String> _deletingIds = {};
 
   @override
   void initState() {
@@ -156,7 +157,7 @@ class _HostDashboardScreenState extends State<HostDashboardScreen> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => _confirmDelete(context, event),
+                  onPressed: _deletingIds.contains(event.id) ? null : () => _confirmDelete(context, event),
                   icon: Icon(Icons.delete_outline, color: Colors.white.withOpacity(0.4), size: 20),
                 ),
               ],
@@ -184,16 +185,25 @@ class _HostDashboardScreenState extends State<HostDashboardScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF201A2B),
         title: const Text('Delete this night?', style: TextStyle(color: Colors.white)),
-        content: Text('This removes "${event.title}" permanently.', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+        content: Text('This removes "${event.title}" and all its reservations permanently.', style: TextStyle(color: Colors.white.withOpacity(0.7))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<EventsCubit>().deleteEvent(event.id);
+            onPressed: () async {
+              if (_deletingIds.contains(event.id)) return;
+              setState(() => _deletingIds.add(event.id));
               Navigator.pop(dialogContext);
+              final success = await _cubit.deleteEvent(event.id);
+              if (!mounted) return;
+              setState(() => _deletingIds.remove(event.id));
+              if (!success) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Deletion could not finish. Check your connection and Firestore rules, then retry deleting this night.'),
+                ));
+              }
             },
             child: const Text('Delete', style: TextStyle(color: Color(0xFFE63888))),
           ),

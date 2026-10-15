@@ -34,7 +34,29 @@ class EventsRepository {
     return _col.doc(eventId).update({'coverImageUrl': url});
   }
 
-  Future<void> deleteEvent(String eventId) {
-    return _col.doc(eventId).delete();
+  Future<void> deleteEvent(String eventId) async {
+    final db = FirebaseFirestore.instance;
+    final eventRef = _col.doc(eventId);
+    // This also makes an interrupted deletion safely retryable.
+    await db.runTransaction<void>((transaction) async {
+      final snapshot = await transaction.get(eventRef);
+      if (snapshot.exists) transaction.update(eventRef, {'deleting': true});
+    });
+    final reservations = db.collection('reservations');
+    while (true) {
+      // Keep the batch within the rules access-call budget even without caching.
+      // Server reads avoid skipping documents due to an incomplete local cache.
+      final snapshot = await reservations
+          .where('eventId', isEqualTo: eventId)
+          .limit(6)
+          .get(const GetOptions(source: Source.server));
+      if (snapshot.docs.isEmpty) break;
+      final batch = db.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+    await eventRef.delete();
   }
 }

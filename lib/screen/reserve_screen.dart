@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:listed/screen/pass_screen.dart';
-import '../logic/auth_cubit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/event_item.dart';
 import '../models/reservation.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/reservation_cubit.dart';
 import '../logic/events_cubit.dart';
-import '../models/reservation.dart';
 
 
 class ReserveScreen extends StatefulWidget {
@@ -24,6 +23,7 @@ class _ReserveScreenState extends State<ReserveScreen> {
   final _leadPhoneController = TextEditingController(text: '+91 98765 43210');
   String _reserveType = 'guestlist';
   int _partySize = 2;
+  bool _isSubmitting = false;
 
 
   @override
@@ -250,36 +250,52 @@ class _ReserveScreenState extends State<ReserveScreen> {
       child: SizedBox(
         height: 52,
         child: ElevatedButton(
-          onPressed: _handleSubmit,
+          onPressed: _isSubmitting ? null : _handleSubmit,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFE63888),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: const Text('Confirm reservation', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          child: Text(_isSubmitting ? 'Saving...' : 'Confirm reservation', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         ),
       ),
     );
   }
 
-  void _handleSubmit() {
-    if (_formKey.currentState!.validate()) {
-      final userId = context.read<AuthCubit>().state.data!.uid;
-
-      final reservation = Reservation(
-        id: '',
-        userId: userId,
-        event: widget.event,
-        type: _reserveType,
-        partySize: _partySize,
-        leadName: _leadNameController.text.trim(),
-        leadPhone: _leadPhoneController.text.trim(),
-        code: 'LST-${(1000 + _partySize * 137) % 9999}',
+  Future<void> _handleSubmit() async {
+    if (_isSubmitting || !_formKey.currentState!.validate()) return;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in again.')),
       );
-
-      context.read<ReservationCubit>().addReservation(reservation);
-      context.read<EventsCubit>().incrementReserved(widget.event.id, _partySize);
-
-      Navigator.push(
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    final cubit = context.read<ReservationCubit>();
+    final eventsCubit = context.read<EventsCubit>();
+    final reservation = Reservation(
+      id: '',
+      userId: userId,
+      event: widget.event,
+      type: _reserveType,
+      partySize: _partySize,
+      leadName: _leadNameController.text.trim(),
+      leadPhone: _leadPhoneController.text.trim(),
+      code: 'LST-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    try {
+      final saved = await cubit.addReservation(reservation);
+      if (!mounted) return;
+      if (!saved) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(cubit.state.error ?? 'Could not save your reservation.'),
+        ));
+        return;
+      }
+      // The repository already incremented reserved in the same transaction.
+      // Refresh the dashboard instead of incrementing it a second time.
+      eventsCubit.loadEvents();
+      await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => PassScreen(
           event: widget.event,
@@ -287,6 +303,8 @@ class _ReserveScreenState extends State<ReserveScreen> {
           partySize: _partySize,
         )),
       );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 }

@@ -38,6 +38,18 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
       body: BlocBuilder<ReservationCubit, BaseState<List<Reservation>>>(
         bloc: _cubit,
         builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator(color: Colors.white));
+          }
+          if (state.error != null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(state.error!, textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70)),
+              ),
+            );
+          }
           final passes = state.data ?? [];
           return passes.isEmpty ? _emptyState() : _passList(passes);
         },

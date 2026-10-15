@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../core/phone_number.dart';
+import 'auth_gate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../logic/auth_cubit.dart';
@@ -12,7 +15,42 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-final _phoneTextInput = TextEditingController();
+  final _phoneTextInput = TextEditingController();
+  bool _isSubmitting = false;
+
+  bool get _isValid => isValidIndianMobileNumber(_phoneTextInput.text);
+
+  Future<void> _continue() async {
+    if (_isSubmitting || !_isValid) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _isSubmitting = true);
+    final auth = context.read<AuthCubit>();
+    try {
+      final phone = '+91${_phoneTextInput.text.trim()}';
+      final sent = await auth.sendOtp(phone);
+      if (!mounted) return;
+      if (!sent) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(auth.state.error ?? 'Could not send OTP. Please try again.'),
+        ));
+        return;
+      }
+      if (auth.isSignedIn) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+          (_) => false,
+        );
+      } else {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OtpScreen(phoneNumber: phone)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
 @override
 void dispose() {
@@ -95,6 +133,12 @@ Widget build(BuildContext context) {
     return Expanded(
       child: TextField(
         keyboardType: TextInputType.phone,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        enabled: !_isSubmitting,
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => _continue(),
         style: const TextStyle(color: Colors.white),
         controller: _phoneTextInput,
         decoration: InputDecoration(
@@ -114,24 +158,16 @@ Widget build(BuildContext context) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        // onPressed: () {
-        //   Navigator.push(context, MaterialPageRoute(builder: (_) => const OtpScreen()));
-        // },
-        onPressed: () async {
-          final phone = '+91${_phoneTextInput.text.trim()}'; // adjust based on your actual field
-          await context.read<AuthCubit>().sendOtp(phone);
-          if (context.mounted) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => OtpScreen(phoneNumber: phone)));
-          }
-        },
+        onPressed: _isValid && !_isSubmitting ? _continue : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE63888),
+          disabledBackgroundColor: const Color(0xFF2A2237),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: const Text(
-          'Continue',
+        child: Text(
+          _isSubmitting ? 'Please wait...' : 'Continue',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
